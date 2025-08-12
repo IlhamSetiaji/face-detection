@@ -83,14 +83,8 @@ Desktop.ini
 uploads/
 results/
 
-# Ignore bat files
-*.bat
-
 # Ignore test outputs
 *.log
 
 # Ignore test files
 *.test
-
-# Ignore project verification script
-verify_project.py
