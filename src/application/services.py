@@ -55,6 +55,15 @@ class DetectionResultSerializer:
                 }
             }
         
+        if face.age:
+            face_dict["age"] = {
+                "estimated_age": float(face.age.age),
+                "age_range": {
+                    "min": int(face.age.age_range[0]),
+                    "max": int(face.age.age_range[1])
+                }
+            }
+        
         return face_dict
 
 

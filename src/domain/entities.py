@@ -10,6 +10,13 @@ class EmotionResult:
     emotion: str  # dominant emotion
     confidence: float  # confidence for dominant emotion
     emotions: Dict[str, float]  # all emotion probabilities
+
+
+@dataclass
+class AgeResult:
+    """Domain entity representing age analysis result"""
+    age: float  # estimated age
+    age_range: Tuple[int, int]  # estimated age range (min, max)
     
 
 @dataclass
@@ -19,6 +26,7 @@ class FaceDetection:
     confidence: float
     landmarks: Optional[List[Tuple[float, float]]] = None  # facial landmarks
     emotion: Optional[EmotionResult] = None  # emotion analysis result
+    age: Optional[AgeResult] = None  # age analysis result
     
     def get_width(self) -> float:
         return self.bbox[2] - self.bbox[0]

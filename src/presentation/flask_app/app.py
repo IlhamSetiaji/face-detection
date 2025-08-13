@@ -33,9 +33,9 @@ def main():
         print("Available endpoints:")
         print("  GET  /health - Health check")
         print("  POST /detect - Detect faces in image (returns JSON)")
-        print("    - Optional parameters: confidence (float), emotions (true/false)")
+        print("    - Optional parameters: confidence (float), emotions (true/false), age (true/false)")
         print("  POST /detect-and-annotate - Detect faces and return annotated image")
-        print("    - Optional parameters: confidence (float), emotions (true/false)")
+        print("    - Optional parameters: confidence (float), emotions (true/false), age (true/false)")
         print("\nServer starting on http://localhost:5000")
         
         api.run(host='0.0.0.0', port=5000, debug=True)

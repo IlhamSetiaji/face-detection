@@ -10,6 +10,8 @@ from ...application.use_cases import FaceDetectionUseCase
 from ...application.services import DetectionResultSerializer, ValidationService
 from ...infrastructure.mtcnn_detector import MTCNNFaceDetector
 from ...infrastructure.deepface_emotion_detector import DeepFaceEmotionDetector
+from ...infrastructure.deepface_age_detector import DeepFaceAgeDetector
+from ...infrastructure.deepface_combined_detector import DeepFaceCombinedDetector
 from ...infrastructure.opencv_processor import OpenCVImageProcessor
 from ...domain.exceptions import DetectionError, InvalidImageError, FileError
 
@@ -39,12 +41,21 @@ class FaceDetectionAPI:
         """Setup dependency injection"""
         try:
             face_detector = MTCNNFaceDetector()
-            emotion_detector = DeepFaceEmotionDetector()
             image_processor = OpenCVImageProcessor()
+            
+            # Use combined detector for efficiency (handles both emotion and age)
+            combined_detector = DeepFaceCombinedDetector()
+            
+            # Also keep individual detectors for flexibility
+            emotion_detector = DeepFaceEmotionDetector()
+            age_detector = DeepFaceAgeDetector()
+            
             self.face_detection_use_case = FaceDetectionUseCase(
                 face_detector, 
                 image_processor,
-                emotion_detector
+                emotion_detector,
+                age_detector,
+                combined_detector
             )
         except Exception as e:
             print(f"Error initializing dependencies: {str(e)}")
@@ -76,6 +87,7 @@ class FaceDetectionAPI:
                 # Get optional parameters
                 confidence_threshold = request.form.get('confidence', type=float)
                 detect_emotions = request.form.get('emotions', 'false').lower() == 'true'
+                detect_age = request.form.get('age', 'false').lower() == 'true'
                 
                 if confidence_threshold is not None:
                     if not ValidationService.validate_confidence_threshold(confidence_threshold):
@@ -92,7 +104,7 @@ class FaceDetectionAPI:
                 
                 # Perform detection
                 result = self.face_detection_use_case.detect_faces_in_image(
-                    file_path, confidence_threshold, detect_emotions
+                    file_path, confidence_threshold, detect_emotions, detect_age
                 )
                 
                 # Serialize result
@@ -128,6 +140,7 @@ class FaceDetectionAPI:
                 # Get optional parameters
                 confidence_threshold = request.form.get('confidence', type=float)
                 detect_emotions = request.form.get('emotions', 'false').lower() == 'true'
+                detect_age = request.form.get('age', 'false').lower() == 'true'
                 
                 if confidence_threshold is not None:
                     if not ValidationService.validate_confidence_threshold(confidence_threshold):
@@ -146,7 +159,7 @@ class FaceDetectionAPI:
                 
                 # Perform detection and annotation
                 result = self.face_detection_use_case.detect_and_annotate(
-                    input_path, output_path, confidence_threshold, True, detect_emotions
+                    input_path, output_path, confidence_threshold, True, detect_emotions, detect_age
                 )
                 
                 # Return annotated image

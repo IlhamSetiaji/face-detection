@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union, Optional, List
 import numpy as np
-from .entities import DetectionResult, EmotionResult
+from .entities import DetectionResult, EmotionResult, AgeResult
 
 
 class FaceDetectorInterface(ABC):
@@ -63,6 +63,41 @@ class EmotionDetectorInterface(ABC):
     @abstractmethod
     def is_model_loaded(self) -> bool:
         """Check if the emotion detection model is properly loaded"""
+        pass
+
+
+class AgeDetectorInterface(ABC):
+    """Abstract interface for age detection implementations"""
+    
+    @abstractmethod
+    def detect_age(self, face_image: np.ndarray) -> AgeResult:
+        """
+        Detect age in a face image
+        
+        Args:
+            face_image: Numpy array of the cropped face image
+            
+        Returns:
+            AgeResult containing age predictions
+        """
+        pass
+    
+    @abstractmethod
+    def detect_ages_batch(self, face_images: List[np.ndarray]) -> List[AgeResult]:
+        """
+        Detect ages in multiple face images
+        
+        Args:
+            face_images: List of numpy arrays of cropped face images
+            
+        Returns:
+            List of AgeResult for each face
+        """
+        pass
+    
+    @abstractmethod
+    def is_model_loaded(self) -> bool:
+        """Check if the age detection model is properly loaded"""
         pass
 
 

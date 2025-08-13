@@ -33,7 +33,7 @@ class OpenCVImageProcessor(ImageProcessorInterface):
             raise FileError(f"Error saving image to {output_path}: {str(e)}")
     
     def draw_detections(self, image: np.ndarray, detection_result: DetectionResult) -> np.ndarray:
-        """Draw bounding boxes, landmarks, and emotions on image"""
+        """Draw bounding boxes, landmarks, emotions, and age on image"""
         try:
             # Create a copy to avoid modifying the original
             annotated_image = image.copy()
@@ -61,6 +61,11 @@ class OpenCVImageProcessor(ImageProcessorInterface):
                 if face.emotion:
                     emotion_text = f"{face.emotion.emotion.title()}: {face.emotion.confidence:.2f}"
                     labels.append(emotion_text)
+                
+                # Add age information if available
+                if face.age:
+                    age_text = f"Age: {face.age.age:.0f} ({face.age.age_range[0]}-{face.age.age_range[1]})"
+                    labels.append(age_text)
                 
                 # Draw labels above the bounding box
                 y_offset = y1
