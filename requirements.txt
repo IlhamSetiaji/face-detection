@@ -1,35 +1,21 @@
-# Core dependencies - Python 3.13 compatible
-flask>=3.0.0
-flask-cors>=6.0.1
-opencv-python>=4.8.0
-pillow>=10.4.0
-numpy>=1.26.0
-werkzeug>=3.0.0
-
-# Alternative face detection - more reliable for Python 3.13
-mediapipe>=0.10.0
-tensorflow>=2.15.0
-# OR use OpenCV's built-in DNN face detection
-retinaface=1.1.1
-# OR use MTCNN which is more compatible
-mtcnn>=0.1.1
-
-# Optional: For FastAPI alternative
-# fastapi>=0.100.0
-# uvicorn>=0.20.0
-
-# Optional: For testing
-# requests>=2.30.0 retinaface=1.1.1
+# Core
+flask==3.0.0
+flask-cors==6.0.1
 opencv-python==4.8.1.78
 pillow==10.1.0
-numpy==1.24.3
-python-multipart==0.0.6
+# numpy==1.19.3
 werkzeug==3.0.1
 
-# Optional: For FastAPI alternative
+# Face detection
+mediapipe==0.10.21
+tensorflow==2.19.0
+# retinaface==1.1.1
+mtcnn==1.0.0
+
+# Optional: FastAPI
 # fastapi==0.104.1
 # uvicorn==0.24.0
 # python-multipart==0.0.6
 
-# Optional: For testing
+# Optional: Testing
 # requests==2.31.0
