@@ -12,6 +12,10 @@ tensorflow==2.19.0
 # retinaface==1.1.1
 mtcnn==1.0.0
 
+# Emotion detection
+deepface
+tf-keras
+
 # Optional: FastAPI
 # fastapi==0.104.1
 # uvicorn==0.24.0

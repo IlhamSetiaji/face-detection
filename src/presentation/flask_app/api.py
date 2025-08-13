@@ -9,6 +9,7 @@ from typing import Optional, Tuple
 from ...application.use_cases import FaceDetectionUseCase
 from ...application.services import DetectionResultSerializer, ValidationService
 from ...infrastructure.mtcnn_detector import MTCNNFaceDetector
+from ...infrastructure.deepface_emotion_detector import DeepFaceEmotionDetector
 from ...infrastructure.opencv_processor import OpenCVImageProcessor
 from ...domain.exceptions import DetectionError, InvalidImageError, FileError
 
@@ -38,8 +39,13 @@ class FaceDetectionAPI:
         """Setup dependency injection"""
         try:
             face_detector = MTCNNFaceDetector()
+            emotion_detector = DeepFaceEmotionDetector()
             image_processor = OpenCVImageProcessor()
-            self.face_detection_use_case = FaceDetectionUseCase(face_detector, image_processor)
+            self.face_detection_use_case = FaceDetectionUseCase(
+                face_detector, 
+                image_processor,
+                emotion_detector
+            )
         except Exception as e:
             print(f"Error initializing dependencies: {str(e)}")
             raise
@@ -69,6 +75,8 @@ class FaceDetectionAPI:
                 
                 # Get optional parameters
                 confidence_threshold = request.form.get('confidence', type=float)
+                detect_emotions = request.form.get('emotions', 'false').lower() == 'true'
+                
                 if confidence_threshold is not None:
                     if not ValidationService.validate_confidence_threshold(confidence_threshold):
                         return jsonify({"error": "Confidence threshold must be between 0.0 and 1.0"}), 400
@@ -84,7 +92,7 @@ class FaceDetectionAPI:
                 
                 # Perform detection
                 result = self.face_detection_use_case.detect_faces_in_image(
-                    file_path, confidence_threshold
+                    file_path, confidence_threshold, detect_emotions
                 )
                 
                 # Serialize result
@@ -119,6 +127,8 @@ class FaceDetectionAPI:
                 
                 # Get optional parameters
                 confidence_threshold = request.form.get('confidence', type=float)
+                detect_emotions = request.form.get('emotions', 'false').lower() == 'true'
+                
                 if confidence_threshold is not None:
                     if not ValidationService.validate_confidence_threshold(confidence_threshold):
                         return jsonify({"error": "Confidence threshold must be between 0.0 and 1.0"}), 400
@@ -136,7 +146,7 @@ class FaceDetectionAPI:
                 
                 # Perform detection and annotation
                 result = self.face_detection_use_case.detect_and_annotate(
-                    input_path, output_path, confidence_threshold
+                    input_path, output_path, confidence_threshold, True, detect_emotions
                 )
                 
                 # Return annotated image

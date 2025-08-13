@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection + Emotion Recognition Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .upload-section.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .options {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .option-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 200px;
+            margin: 0 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .face-result {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .emotion-item {
+            text-align: center;
+            padding: 8px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        .emotion-item.dominant {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        #annotatedImage {
+            max-width: 100%;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Face Detection + Emotion Recognition</h1>
+        
+        <div class="upload-section" id="uploadSection">
+            <p>📁 Choose an image file or drag and drop here</p>
+            <input type="file" id="imageInput" accept="image/*">
+            <img id="imagePreview" style="display: none;">
+        </div>
+        
+        <div class="options">
+            <div class="option-group">
+                <label for="confidenceSlider">Confidence Threshold:</label>
+                <input type="range" id="confidenceSlider" min="0.1" max="1.0" step="0.1" value="0.5">
+                <span id="confidenceValue">0.5</span>
+            </div>
+            
+            <div class="option-group">
+                <label>
+                    <input type="checkbox" id="emotionCheckbox" checked>
+                    Enable Emotion Detection
+                </label>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="detectBtn" onclick="detectFaces()">🔍 Detect Faces</button>
+            <button id="annotateBtn" onclick="getAnnotatedImage()">🖼️ Get Annotated Image</button>
+        </div>
+        
+        <div id="results" class="results" style="display: none;"></div>
+        <img id="annotatedImage" style="display: none;">
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let selectedFile = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const confidenceSlider = document.getElementById('confidenceSlider');
+            const confidenceValue = document.getElementById('confidenceValue');
+            
+            confidenceSlider.addEventListener('input', function() {
+                confidenceValue.textContent = this.value;
+            });
+            
+            setupFileInput();
+            setupDragDrop();
+        });
+
+        function setupFileInput() {
+            const imageInput = document.getElementById('imageInput');
+            const imagePreview = document.getElementById('imagePreview');
+            
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFile = file;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                    updateButtons();
+                }
+            });
+        }
+
+        function setupDragDrop() {
+            const uploadSection = document.getElementById('uploadSection');
+            
+            uploadSection.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadSection.classList.add('dragover');
+            });
+            
+            uploadSection.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadSection.classList.remove('dragover');
+            });
+            
+            uploadSection.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadSection.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                        selectedFile = file;
+                        document.getElementById('imageInput').files = files;
+                        
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            document.getElementById('imagePreview').src = e.target.result;
+                            document.getElementById('imagePreview').style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                        updateButtons();
+                    }
+                }
+            });
+        }
+
+        function updateButtons() {
+            const detectBtn = document.getElementById('detectBtn');
+            const annotateBtn = document.getElementById('annotateBtn');
+            const hasFile = selectedFile !== null;
+            
+            detectBtn.disabled = !hasFile;
+            annotateBtn.disabled = !hasFile;
+        }
+
+        function showLoading(message = 'Processing...') {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function showSuccess(message) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = `<div class="success">${message}</div>`;
+        }
+
+        async function detectFaces() {
+            if (!selectedFile) return;
+            
+            showLoading('Detecting faces and emotions...');
+            
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('confidence', document.getElementById('confidenceSlider').value);
+            formData.append('emotions', document.getElementById('emotionCheckbox').checked ? 'true' : 'false');
+            
+            try {
+                const response = await fetch(`${API_BASE}/detect`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    showError(`Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+
+        async function getAnnotatedImage() {
+            if (!selectedFile) return;
+            
+            showLoading('Generating annotated image...');
+            
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('confidence', document.getElementById('confidenceSlider').value);
+            formData.append('emotions', document.getElementById('emotionCheckbox').checked ? 'true' : 'false');
+            
+            try {
+                const response = await fetch(`${API_BASE}/detect-and-annotate`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    const annotatedImage = document.getElementById('annotatedImage');
+                    annotatedImage.src = imageUrl;
+                    annotatedImage.style.display = 'block';
+                    
+                    showSuccess('Annotated image generated successfully!');
+                } else {
+                    const data = await response.json();
+                    showError(`Error: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            
+            let html = `
+                <div class="success">
+                    <strong>Detection completed in ${data.processing_time.toFixed(2)}s</strong><br>
+                    Found ${data.face_count} face(s) in image (${data.original_image_size.width}x${data.original_image_size.height})
+                </div>
+            `;
+            
+            if (data.faces && data.faces.length > 0) {
+                data.faces.forEach((face, index) => {
+                    html += `
+                        <div class="face-result">
+                            <h4>Face ${index + 1}</h4>
+                            <p><strong>Confidence:</strong> ${(face.confidence * 100).toFixed(1)}%</p>
+                            <p><strong>Position:</strong> (${face.bbox.x1.toFixed(0)}, ${face.bbox.y1.toFixed(0)}) - (${face.bbox.x2.toFixed(0)}, ${face.bbox.y2.toFixed(0)})</p>
+                            <p><strong>Size:</strong> ${face.width.toFixed(0)} x ${face.height.toFixed(0)} pixels</p>
+                    `;
+                    
+                    if (face.emotion) {
+                        html += `
+                            <p><strong>Dominant Emotion:</strong> ${face.emotion.dominant_emotion.toUpperCase()} (${(face.emotion.confidence * 100).toFixed(1)}%)</p>
+                            <div class="emotion-grid">
+                        `;
+                        
+                        Object.entries(face.emotion.all_emotions).forEach(([emotion, confidence]) => {
+                            const isDominant = emotion === face.emotion.dominant_emotion;
+                            html += `
+                                <div class="emotion-item ${isDominant ? 'dominant' : ''}">
+                                    <div>${emotion.toUpperCase()}</div>
+                                    <div>${(confidence * 100).toFixed(1)}%</div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                    } else {
+                        html += '<p><em>No emotion data</em></p>';
+                    }
+                    
+                    if (face.landmarks) {
+                        html += `<p><strong>Landmarks:</strong> ${face.landmarks.length} points detected</p>`;
+                    }
+                    
+                    html += '</div>';
+                });
+            }
+            
+            results.innerHTML = html;
+        }
+
+        // Initial button state
+        updateButtons();
+    </script>
+</body>
+</html>

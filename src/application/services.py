@@ -45,6 +45,16 @@ class DetectionResultSerializer:
                 for point in face.landmarks
             ]
         
+        if face.emotion:
+            face_dict["emotion"] = {
+                "dominant_emotion": face.emotion.emotion,
+                "confidence": float(face.emotion.confidence),
+                "all_emotions": {
+                    emotion: float(score) 
+                    for emotion, score in face.emotion.emotions.items()
+                }
+            }
+        
         return face_dict
 
 

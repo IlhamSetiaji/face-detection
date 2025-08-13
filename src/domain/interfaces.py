@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Union, Optional, List
 import numpy as np
-from .entities import DetectionResult
+from .entities import DetectionResult, EmotionResult
 
 
 class FaceDetectorInterface(ABC):
@@ -28,6 +28,41 @@ class FaceDetectorInterface(ABC):
     @abstractmethod
     def is_model_loaded(self) -> bool:
         """Check if the detection model is properly loaded"""
+        pass
+
+
+class EmotionDetectorInterface(ABC):
+    """Abstract interface for emotion detection implementations"""
+    
+    @abstractmethod
+    def detect_emotion(self, face_image: np.ndarray) -> EmotionResult:
+        """
+        Detect emotion in a face image
+        
+        Args:
+            face_image: Numpy array of the cropped face image
+            
+        Returns:
+            EmotionResult containing emotion predictions
+        """
+        pass
+    
+    @abstractmethod
+    def detect_emotions_batch(self, face_images: List[np.ndarray]) -> List[EmotionResult]:
+        """
+        Detect emotions in multiple face images
+        
+        Args:
+            face_images: List of numpy arrays of cropped face images
+            
+        Returns:
+            List of EmotionResult for each face
+        """
+        pass
+    
+    @abstractmethod
+    def is_model_loaded(self) -> bool:
+        """Check if the emotion detection model is properly loaded"""
         pass
 
 

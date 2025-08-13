@@ -1,8 +1,16 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import numpy as np
 
+
+@dataclass
+class EmotionResult:
+    """Domain entity representing emotion analysis result"""
+    emotion: str  # dominant emotion
+    confidence: float  # confidence for dominant emotion
+    emotions: Dict[str, float]  # all emotion probabilities
+    
 
 @dataclass
 class FaceDetection:
@@ -10,6 +18,7 @@ class FaceDetection:
     bbox: Tuple[float, float, float, float]  # (x1, y1, x2, y2)
     confidence: float
     landmarks: Optional[List[Tuple[float, float]]] = None  # facial landmarks
+    emotion: Optional[EmotionResult] = None  # emotion analysis result
     
     def get_width(self) -> float:
         return self.bbox[2] - self.bbox[0]

@@ -33,7 +33,7 @@ class OpenCVImageProcessor(ImageProcessorInterface):
             raise FileError(f"Error saving image to {output_path}: {str(e)}")
     
     def draw_detections(self, image: np.ndarray, detection_result: DetectionResult) -> np.ndarray:
-        """Draw bounding boxes and landmarks on image"""
+        """Draw bounding boxes, landmarks, and emotions on image"""
         try:
             # Create a copy to avoid modifying the original
             annotated_image = image.copy()
@@ -54,25 +54,39 @@ class OpenCVImageProcessor(ImageProcessorInterface):
                 # Draw bounding box
                 cv2.rectangle(annotated_image, (x1, y1), (x2, y2), color, 2)
                 
-                # Draw confidence score
-                confidence_text = f"{confidence:.2f}"
-                text_size = cv2.getTextSize(confidence_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-                cv2.rectangle(
-                    annotated_image, 
-                    (x1, y1 - text_size[1] - 10), 
-                    (x1 + text_size[0], y1), 
-                    color, 
-                    -1
-                )
-                cv2.putText(
-                    annotated_image, 
-                    confidence_text, 
-                    (x1, y1 - 5), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 
-                    0.6, 
-                    (255, 255, 255), 
-                    2
-                )
+                # Prepare text labels
+                labels = [f"Conf: {confidence:.2f}"]
+                
+                # Add emotion information if available
+                if face.emotion:
+                    emotion_text = f"{face.emotion.emotion.title()}: {face.emotion.confidence:.2f}"
+                    labels.append(emotion_text)
+                
+                # Draw labels above the bounding box
+                y_offset = y1
+                for i, label in enumerate(labels):
+                    text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+                    label_y = y_offset - (len(labels) - i) * (text_size[1] + 10)
+                    
+                    # Draw background rectangle for text
+                    cv2.rectangle(
+                        annotated_image, 
+                        (x1, label_y - text_size[1] - 5), 
+                        (x1 + text_size[0] + 10, label_y + 5), 
+                        color, 
+                        -1
+                    )
+                    
+                    # Draw text
+                    cv2.putText(
+                        annotated_image, 
+                        label, 
+                        (x1 + 5, label_y), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 
+                        0.6, 
+                        (255, 255, 255), 
+                        2
+                    )
                 
                 # Draw landmarks if available
                 if face.landmarks:
